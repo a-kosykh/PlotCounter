@@ -8,8 +8,6 @@
 #include <QHeaderView>
 #include <QRandomGenerator>
 
-#include <limits>
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -19,6 +17,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_chart = new QChart;
     m_lineSeries = new QLineSeries;
 
+    setWindowTitle( mainWindowTitle );
+
+    // Инициализация осей Х и Y
     m_xAxis = new QValueAxis;
     m_xAxis->setMax( minXAxisValue );
     m_xAxis->setLabelFormat( "%.f" );
@@ -31,6 +32,15 @@ MainWindow::MainWindow(QWidget *parent)
     yAxis->setTitleText( yAxisTitle );
     m_chart->addAxis( yAxis, Qt::AlignLeft );
 
+    // Подстановка объектов в виджет
+    m_chart->legend()->setVisible( false );
+    m_chart->addSeries( m_lineSeries );
+    m_lineSeries->attachAxis( m_xAxis );
+    m_lineSeries->attachAxis( yAxis );
+    ui->chartView->setChart( m_chart );
+    ui->chartView->setRenderHints( QPainter::Antialiasing );
+
+    // Инициализация таблицы с результатами
     m_resultsTw = new QTableWidget;
     m_resultsTw->verticalHeader()->setVisible( false );
     m_resultsTw->setColumnCount( 3 );
@@ -41,23 +51,18 @@ MainWindow::MainWindow(QWidget *parent)
     m_resultsTw->horizontalHeader()->setSectionsClickable( false );
     m_resultsTw->horizontalHeader()->setSectionsMovable( false );
     m_resultsTw->horizontalHeader()->setSectionResizeMode( QHeaderView::Fixed );
-
-    m_chart->legend()->setVisible( false );
-    m_chart->addSeries( m_lineSeries );
-    m_lineSeries->attachAxis( m_xAxis );
-    m_lineSeries->attachAxis( yAxis );
-    ui->chartView->setChart( m_chart );
-    ui->chartView->setRenderHints( QPainter::Antialiasing );
-
     ui->scrollArea->setWidget( m_resultsTw );
 
-    setState( ePlotState::EmptyPlot );
+    // Инициализация соединений для контроля состояния кнопок
     connect( this, &MainWindow::stateChanged, this, &MainWindow::changeStartStopButtonTitle );
     connect( this, &MainWindow::stateChanged, this, &MainWindow::changeSaveButtonEnabled );
     connect( this, &MainWindow::stateChanged, this, &MainWindow::changeStartStopButtonEnabled );
+    connect( this, &MainWindow::stateChanged, this, &MainWindow::changeResetButtonEnabled );
 
     ui->clearButton->setEnabled( false );
     ui->saveButton->setEnabled( false );
+    ui->resetButton->setEnabled( false );
+    setState( ePlotState::EmptyPlot );
 }
 
 MainWindow::~MainWindow()
@@ -71,7 +76,7 @@ void MainWindow::appendDot(int x, int y)
         setState( ePlotState::EmptyPlot );
         return;
     }
-    if ( getState() ==  ePlotState::Pause ) {
+    if ( getState() == ePlotState::Pause ) {
         return;
     }
     setState( ePlotState::Running );
@@ -82,9 +87,14 @@ void MainWindow::appendDot(int x, int y)
     emit dotRequested();
 }
 
-void MainWindow::saveData(int count, int sum)
+void MainWindow::saveResults(int count, int sum)
 {
     int rowIdx = m_resultsTw->rowCount();
+    if ( rowIdx >= maxResultRowCount ) {
+        ui->saveButton->setEnabled( false );
+        return;
+    }
+
     m_resultsTw->insertRow( rowIdx );
     m_resultsTw->setItem( rowIdx, eResultsTableViewColumns::Number, new QTableWidgetItem( QString::number( rowIdx + 1 ) ) );
     m_resultsTw->setItem( rowIdx, eResultsTableViewColumns::Count, new QTableWidgetItem( QString::number( count ) ) );
@@ -148,8 +158,7 @@ void MainWindow::changeStartStopButtonTitle()
 {
     if ( getState() == ePlotState::Running ) {
         ui->startStopButton->setText( "Stop" );
-    }
-    else {
+    } else {
         ui->startStopButton->setText( "Start" );
     }
 }
@@ -165,11 +174,21 @@ void MainWindow::changeStartStopButtonEnabled()
 
 void MainWindow::changeSaveButtonEnabled()
 {
-    if ( getState() == ePlotState::EmptyPlot ) {
+    if ( getState() == ePlotState::EmptyPlot
+        || getState() == ePlotState::Reset
+        || m_resultsTw->rowCount() >= maxResultRowCount ) {
         ui->saveButton->setEnabled( false );
-    }
-    else {
+    } else {
         ui->saveButton->setEnabled( true );
+    }
+}
+
+void MainWindow::changeResetButtonEnabled()
+{
+    if ( getState() == ePlotState::EmptyPlot || getState() == ePlotState::Reset ) {
+        ui->resetButton->setEnabled( false );
+    } else {
+        ui->resetButton->setEnabled( true );
     }
 }
 

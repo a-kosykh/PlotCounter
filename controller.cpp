@@ -4,6 +4,7 @@
 Controller::Controller(QObject *parent)
     : QObject{parent}
 {
+    // Инициализация объекта генерирующего точки и перенос его в отдельный поток
     DotGenerator *dg = new DotGenerator;
     dg->moveToThread( &m_dotGenerationThread );
 

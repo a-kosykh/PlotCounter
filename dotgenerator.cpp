@@ -10,6 +10,7 @@ DotGenerator::DotGenerator(QObject *parent)
 
 void DotGenerator::generateDot()
 {
+    // Проверки на границы целочисленных значений
     if ( m_dotCount == std::numeric_limits<int>::max() ) {
         emit sendError();
         return;
