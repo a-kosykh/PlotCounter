@@ -16,11 +16,19 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    const QString startButtonTitle = "Start";
+    const QString stopButtonTitle = "Stop";
+    const QString xAxisTitle = "Count";
+    const QString yAxisTitle = "Value";
+
+    const int minXAxisValue = 5;
+
     enum ePlotState {
         EmptyPlot,
         Running,
         Reset,
-        Pause
+        Pause,
+        Error
     };
 
     enum eResultsTableViewColumns {
@@ -28,15 +36,15 @@ class MainWindow : public QMainWindow
         Count,
         Sum
     };
+    const QStringList resultTWColumnNames = { "№", "Count", "Summary" };
 
 public:
     MainWindow( QWidget *parent = nullptr );
     ~MainWindow();
 
     void appendDot( int x, int y );
-    void requestDot();
-    void resetPlot();
     void saveData( int count, int sum );
+    void setError();
 
     void setState( ePlotState state );
     ePlotState getState() const;
@@ -65,5 +73,7 @@ private:
 
 private:
     void changeStartStopButtonTitle();
+    void changeStartStopButtonEnabled();
+    void changeSaveButtonEnabled();
 };
 #endif // MAINWINDOW_H

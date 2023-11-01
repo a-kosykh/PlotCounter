@@ -12,11 +12,13 @@ public:
     ~Controller();
 
 signals:
-    void dotGenerated( int x, int y );
     void dotRequested();
     void resetRequested();
     void saveRequested();
-    void dataSend( int count, int sum );
+
+    void dotSent( int x, int y );
+    void resultSent( int count, int sum );
+    void errorSent();
 
 private:
     QThread m_dotGenerationThread;

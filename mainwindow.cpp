@@ -1,10 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include "defs.h"
+
 #include <QTableWidgetItem>
 #include <QStandardItemModel>
 #include <QHeaderView>
 #include <QRandomGenerator>
+
+#include <limits>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -16,21 +20,21 @@ MainWindow::MainWindow(QWidget *parent)
     m_lineSeries = new QLineSeries;
 
     m_xAxis = new QValueAxis;
-    m_xAxis->setMax( 5 );
+    m_xAxis->setMax( minXAxisValue );
     m_xAxis->setLabelFormat( "%.f" );
-    m_xAxis->setTitleText( "Count" );
+    m_xAxis->setTitleText( xAxisTitle );
     m_chart->addAxis( m_xAxis, Qt::AlignBottom );
 
     QValueAxis* yAxis = new QValueAxis;
-    yAxis->setMax( 100 );
+    yAxis->setMax( Defs::maxValue );
     yAxis->setLabelFormat( "%.f" );
-    yAxis->setTitleText( "Value" );
+    yAxis->setTitleText( yAxisTitle );
     m_chart->addAxis( yAxis, Qt::AlignLeft );
 
     m_resultsTw = new QTableWidget;
     m_resultsTw->verticalHeader()->setVisible( false );
     m_resultsTw->setColumnCount( 3 );
-    m_resultsTw->setHorizontalHeaderLabels( QStringList() << "№" << "Count" << "Summary" );
+    m_resultsTw->setHorizontalHeaderLabels( resultTWColumnNames );
     m_resultsTw->setColumnWidth( eResultsTableViewColumns::Number, ui->scrollArea->maximumWidth() / 6 );
     m_resultsTw->setColumnWidth( eResultsTableViewColumns::Count, ui->scrollArea->maximumWidth() / 3 );
     m_resultsTw->horizontalHeader()->setStretchLastSection( true );
@@ -49,6 +53,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     setState( ePlotState::EmptyPlot );
     connect( this, &MainWindow::stateChanged, this, &MainWindow::changeStartStopButtonTitle );
+    connect( this, &MainWindow::stateChanged, this, &MainWindow::changeSaveButtonEnabled );
+    connect( this, &MainWindow::stateChanged, this, &MainWindow::changeStartStopButtonEnabled );
+
+    ui->clearButton->setEnabled( false );
+    ui->saveButton->setEnabled( false );
 }
 
 MainWindow::~MainWindow()
@@ -70,18 +79,7 @@ void MainWindow::appendDot(int x, int y)
     m_lineSeries->append( x, y );
     m_xAxis->setMax( x++ );
 
-    requestDot();
-}
-
-void MainWindow::requestDot()
-{
     emit dotRequested();
-}
-
-void MainWindow::resetPlot()
-{
-    m_lineSeries->clear();
-    m_xAxis->setMax( 5 );
 }
 
 void MainWindow::saveData(int count, int sum)
@@ -91,6 +89,12 @@ void MainWindow::saveData(int count, int sum)
     m_resultsTw->setItem( rowIdx, eResultsTableViewColumns::Number, new QTableWidgetItem( QString::number( rowIdx + 1 ) ) );
     m_resultsTw->setItem( rowIdx, eResultsTableViewColumns::Count, new QTableWidgetItem( QString::number( count ) ) );
     m_resultsTw->setItem( rowIdx, eResultsTableViewColumns::Sum, new QTableWidgetItem( QString::number( sum ) ) );
+    ui->clearButton->setEnabled( true );
+}
+
+void MainWindow::setError()
+{
+    setState( ePlotState::Error );
 }
 
 void MainWindow::setState(ePlotState state)
@@ -116,13 +120,14 @@ void MainWindow::on_startStopButton_clicked()
     }
 
     setState( ePlotState::Running );
-    requestDot();
+    emit dotRequested();
 }
 
 void MainWindow::on_resetButton_clicked()
 {
     setState( ePlotState::Reset );
-    resetPlot();
+    m_lineSeries->clear();
+    m_xAxis->setMax( minXAxisValue );
     emit plotReset();
 }
 
@@ -136,6 +141,7 @@ void MainWindow::on_clearButton_clicked()
 {
     m_resultsTw->clearContents();
     m_resultsTw->setRowCount( 0 );
+    ui->clearButton->setEnabled( false );
 }
 
 void MainWindow::changeStartStopButtonTitle()
@@ -145,6 +151,25 @@ void MainWindow::changeStartStopButtonTitle()
     }
     else {
         ui->startStopButton->setText( "Start" );
+    }
+}
+
+void MainWindow::changeStartStopButtonEnabled()
+{
+    if ( getState() == ePlotState::Error ) {
+        ui->startStopButton->setEnabled( false );
+    } else {
+        ui->startStopButton->setEnabled( true );
+    }
+}
+
+void MainWindow::changeSaveButtonEnabled()
+{
+    if ( getState() == ePlotState::EmptyPlot ) {
+        ui->saveButton->setEnabled( false );
+    }
+    else {
+        ui->saveButton->setEnabled( true );
     }
 }
 

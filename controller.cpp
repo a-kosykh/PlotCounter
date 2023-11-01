@@ -9,12 +9,12 @@ Controller::Controller(QObject *parent)
 
     connect( &m_dotGenerationThread, &QThread::finished, dg, &DotGenerator::deleteLater );
     connect( this, &Controller::dotRequested, dg, &DotGenerator::generateDot );
-    connect( dg, &DotGenerator::dotGenerated, this, &Controller::dotGenerated );
-
     connect( this, &Controller::resetRequested, dg, &DotGenerator::clearData );
-
     connect( this, &Controller::saveRequested, dg, &DotGenerator::requestData );
-    connect( dg, &DotGenerator::dataSend, this, &Controller::dataSend );
+
+    connect( dg, &DotGenerator::sendDot, this, &Controller::dotSent );
+    connect( dg, &DotGenerator::sendResult, this, &Controller::resultSent );
+    connect( dg, &DotGenerator::sendError, this, &Controller::errorSent );
 
     m_dotGenerationThread.start();
 }

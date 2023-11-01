@@ -12,13 +12,14 @@ public:
     void clearData();
     void requestData();
 
+signals:
+    void sendDot( int x, int y );
+    void sendResult( int count, int sum );
+    void sendError();
+
 private:
     int m_dotCount = 0;
     int m_dotSum = 0;
-
-signals:
-    void dotGenerated( int x, int y );
-    void dataSend( int count, int sum );
 };
 
 #endif // DOTGENERATOR_H

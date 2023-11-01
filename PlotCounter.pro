@@ -16,6 +16,7 @@ SOURCES += \
 
 HEADERS += \
     controller.h \
+    defs.h \
     dotgenerator.h \
     mainwindow.h
 
